@@ -15,6 +15,11 @@
 - Removed: dev DB password fragments, EC2 instance IDs, AWS account-id hints, and team members' GitHub handles (third-party PII).
 - **`init-join-us` excluded from the published package** — the internal infra reproduction runbook contains a live SES credential, EC2 instance IDs, and internal topology. Kept local only via `.gitignore` + `.npmignore` + `package.json` `files` negation; not listed in `codex/manifest.json`.
 
+### Configuration (so generalized skills still work)
+- Skills + scripts resolve placeholders (`<OWNER>/<REPO>`, `<my-gh-login>`, `<project-root>`, ...) from a PRIVATE env file OR interactively. Resolution: `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env` (real env vars override the file).
+- `config/join-us.env.example` template ships; the real config is private (gitignored / `~/.config`), never published.
+- `join-us config [--init]` scaffolds/inspects the config (mode 600, no overwrite without `--force`); `join-us doctor` reports config status. `find_missing_prs.py` reads it and errors clearly when unset (no silent `<OWNER>/<REPO>` calls). Each skill carries a '설정' section documenting the interactive fallback.
+
 ### Skills (6)
 - `pr-join-us`, `merge_to_dev-join-us`, `make-join-us-pr-report`, `monthly-report`, `post-wiki-join-us`, `review-before-pr-join-us`.
 

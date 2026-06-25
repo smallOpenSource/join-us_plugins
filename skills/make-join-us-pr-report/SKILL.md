@@ -3,10 +3,22 @@ name: make-join-us-pr-report
 description: "[joinus] 본인(<my-gh-login>* 계정, 현 <my-gh-login>/구 <my-gh-login>)이 repo(<OWNER>/<REPO>)에 **dev 로 머지**한 PR 을 GitHub PR 목록(권위 소스) 기준으로 모아, 아직 SR/reports/ 에 없는 것을 운영자용 '처리 리포트'(조치일자·제목·기존문제·증거·리스크·조치방법)로 작성하고 본문을 humanize-korean 으로 다듬은 뒤 build_index.sh 로 index.md 를 재생성한다. 같은 산출물의 작업→수정→번복→조치는 한 파일로 묶고(211_212_214 패턴), change_log 미러/기록 메타는 제외하며, change_log 에 누락된 내 PR 도 함께 탐지/보고한다. PR 번호별 작업을 운영자 수준으로 정리/요약하려는 모든 요청에 사용 — '처리 리포트 작성/갱신', 'PR별 작업 정리', 'SR/reports 누락 채워', '내 PR 빠진 거 리포트', 'change_log 누락 PR 확인', 'PR 보고서 만들어', '/make-join-us-pr-report'. 로컬 전용(미커밋·시크릿 0). ⚠️ 월간 봉사보고서(monthly-report)와 다름 — 이건 PR 단위 상세 리포트."
 invocation: /make-join-us-pr-report
 version: 1.2.0
-location: ~/.claude/skills/make-join-us-pr-report/SKILL.md
+location: skills/make-join-us-pr-report/  (설치 위치 — Claude: 플러그인 경로 · Codex: ~/.codex/skills/join-us-make-join-us-pr-report/)
 ---
 
 # make-join-us-pr-report — joinus PR별 처리 리포트
+
+## ⚙️ 설정 (필수 — 플레이스홀더 해소)
+
+이 스킬 본문의 `<OWNER>/<REPO>`·`<my-gh-login>`·`<git-author-name>`·`<project-root>` 등은 **범용화 플레이스홀더**다. 실행 전 반드시 실제 값으로 해소한다:
+
+1. **설정 파일 로드**(KEY=value, 첫 발견 우선): `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env`. `set -a; . <file>` 로 export 하거나 값을 읽어 치환한다. 템플릿 = `config/join-us.env.example`(`join-us config --init` 로 생성).
+2. **설정이 없으면 사용자에게 1회 질문**해 값을 확보(인터랙션)하고 같은 세션 동안 재사용한다.
+
+치환표: `<OWNER>/<REPO>`→`$JOINUS_REPO` · `<my-gh-login>`→`$JOINUS_GH_LOGIN`(구계정=`$JOINUS_GH_LOGIN_ALT`) · `<git-author-name>`→`$JOINUS_AUTHOR_NAME` · `<project-root>`→`$JOINUS_PROJECT_ROOT` · `<project-domain>`→`$JOINUS_WIKI_DOMAIN` · 팀원 제외 목록→`$JOINUS_TEAM_LOGINS` · `<plaintext-pw>`(알려진 평문 시크릿 스캔 패턴)→`$JOINUS_SECRET_PATTERNS`.
+
+> ⚠️ 실값 설정 파일은 **비공개**(별도 관리) — 절대 커밋/게시하지 않는다. 공개본엔 `*.example`(플레이스홀더)만 포함된다. 본문의 "시크릿 0" 게이트는 그대로 유지한다.
+
 
 ## Purpose
 
@@ -24,7 +36,7 @@ joinus 에서 **본인(GitHub author login `<my-gh-login>*` — 현 `<my-gh-logi
 3중 대조(GitHub ↔ change_log ↔ reports)는 번들 스크립트가 처리한다:
 
 ```bash
-python3 ~/.claude/skills/make-join-us-pr-report/scripts/find_missing_prs.py --json /tmp/pr_report_todo.json
+python3 scripts/find_missing_prs.py --json /tmp/pr_report_todo.json
 # 기본 dev-merged·MERGED·cl-meta제외. [A]=생성대상, [B]=change_log누락, [C]=base 매칭실패.
 # 토글: --base all | --include-cl-meta | --include-open | --include-closed
 ```
@@ -88,12 +100,12 @@ python3 ~/.claude/skills/make-join-us-pr-report/scripts/find_missing_prs.py --js
 ## Workflow
 
 1. **범위 확정** — 기본 인자 없음 = dev-merged·MERGED·cl-meta제외 증분. `#NNN …`=지정. 토글: `--base all`·`--include-cl-meta`·`--include-open`·`--include-closed`·`--no-humanize`.
-2. **권위 목록·3중 대조** — `find_missing_prs.py --json /tmp/pr_report_todo.json`. `gh auth status` 선확인.
+2. **권위 목록·3중 대조** — `python3 scripts/find_missing_prs.py --json /tmp/pr_report_todo.json` (**이 스킬 디렉터리에서** 실행 — 설치 위치는 frontmatter `location` 참조; 설정 미해소 시 스크립트가 안내 후 중단). `gh auth status` 선확인.
 3. **묶음 확정** — `to_generate` 를 **묶음 규칙**으로 유닛화(같은 산출물 lifecycle 만 묶음, 나머지 단독). 자동 graph 과병합은 산출물 단위로 교정. 규모가 크면 유닛 목록을 사용자에게 한 번 확인.
 4. **재료 수집** — 유닛의 각 PR: `in_changelog=true` → change_log 행 `내용`·`기타`; `false` → `gh pr view <N> --json title,body,closingIssuesReferences,url,mergedAt`.
 5. **작성** — 위 양식(묶음=lifecycle 1파일). 시크릿 스크럽.
 6. **humanize** — 아래 단계. 신규 생성분 본문 산문만.
-7. **index 재생성** — `bash SR/reports/build_index.sh`(PYTHON_BIN 강제·폴백 금지).
+7. **index 재생성** — `build_index.sh` 가 있으면 `bash SR/reports/build_index.sh`(PYTHON_BIN 강제·폴백 금지). ⚠️ `build_index.{sh,py}`·`report_sample.md`·`211_212_214_*.md` 는 **이 플러그인 번들이 아니라 프로젝트 측 자산**(`$JOINUS_PROJECT_ROOT/SR/reports/`) — 없으면 index 재생성을 건너뛰고 보고에 명시.
 8. **검증 & 보고** — 시크릿 0·구조(조치일자 1+5섹션)·커버리지([A] 잔여)·중복 0·[B] change_log 누락 목록. **커밋/PR/change_log 편집 안 함.**
 
 > 대량(수십~수백 유닛)일 때는 Workflow 로 `Discover → Draft → Humanize(pipeline) → Index&Verify` 병렬 처리 권장. 레이트리밋 시 resume(완료분 캐시·실패분만 재실행).
@@ -112,10 +124,10 @@ python3 ~/.claude/skills/make-join-us-pr-report/scripts/find_missing_prs.py --js
 
 ```bash
 cd <project-root>
-python3 ~/.claude/skills/make-join-us-pr-report/scripts/find_missing_prs.py | head -6     # [A] 잔여
+python3 scripts/find_missing_prs.py | head -6     # [A] 잔여
 for F in SR/reports/<새파일들>.md; do grep -cE '^\*\*조치일자\*\*:' "$F"; grep -cE '^[1-5]\. \*\*' "$F"; done   # 1, 5
 grep -rEn 'i-[0-9a-f]{8,}|\b[0-9]{12}\b|ec2-[0-9-]+\.|ip-10-|password\s*[:=]' SR/reports/<새파일들>.md         # 0
-bash SR/reports/build_index.sh
+[ -f SR/reports/build_index.sh ] && bash SR/reports/build_index.sh || echo "(build_index.sh 없음 — 프로젝트 측 자산; index 재생성 생략)"
 ```
 
 ## Success Criteria
@@ -136,7 +148,8 @@ bash SR/reports/build_index.sh
 
 ## 관련 자산 / 메모리
 
-- 번들: `scripts/find_missing_prs.py`(권위 소스 3중 누락 탐지) · 인덱스 `build_index.py`/`.sh` · 양식 `report_sample.md` + `211_212_214_*.md`
+- **이 스킬에 번들된 자산**(설치 위치 = frontmatter `location`): `scripts/find_missing_prs.py`(권위 소스 3중 누락 탐지) **하나뿐**.
+- **프로젝트 측 자산**(번들 아님 — `$JOINUS_PROJECT_ROOT/SR/reports/` 에 사용자가 보유/생성): 인덱스 `build_index.py`/`.sh` · 양식 `report_sample.md` + 묶음 예시 `211_212_214_*.md`. 없으면 index 재생성·양식 참조 단계는 건너뛴다(보고에 명시).
 - 데이터: GitHub PR 목록(`gh`, 권위) + `wiki_docs/change_log.md`(재료·갭)
 - 연계: `monthly-report` · `humanize-korean:humanize-monolith`/`humanize-korean`
 - 메모리: `one-pr-per-unit-of-work`, `gh-account-has-repo-admin`, `wiki-changelog-rule`, `no-push-without-permission`, `joinus-skill-description-korean`, `no-ai-coauthor-trailer`

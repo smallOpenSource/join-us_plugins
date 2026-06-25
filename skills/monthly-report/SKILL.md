@@ -3,10 +3,22 @@ name: monthly-report
 description: "[joinus] 월간 봉사활동 보고서 작성 — SR/monthly_summary/<YYYY-MM>.md 에 본인(<my-gh-login>) 작업만 모아 양식 5섹션(활동내용요약·활동결과물(PR링크)·의견후기·활동일시·총합산)으로. 토·일 기재·매일 12:00~20:00·하루 8h(요약=헤더+`- `불릿·일시=슬래시·총합산=ISO날짜), 인간 worktime 기준, 시크릿 0. 트리거: '월간 보고서', '봉사활동 보고서', 'monthly-report', '/monthly-report'."
 invocation: /monthly-report
 version: 1.5.0
-location: ~/.claude/skills/monthly-report/SKILL.md
+location: skills/monthly-report/  (설치 위치 — Claude: 플러그인 경로 · Codex: ~/.codex/skills/join-us-monthly-report/)
 ---
 
 # monthly-report — joinus 월간 봉사활동 보고서
+
+## ⚙️ 설정 (필수 — 플레이스홀더 해소)
+
+이 스킬 본문의 `<OWNER>/<REPO>`·`<my-gh-login>`·`<git-author-name>`·`<project-root>` 등은 **범용화 플레이스홀더**다. 실행 전 반드시 실제 값으로 해소한다:
+
+1. **설정 파일 로드**(KEY=value, 첫 발견 우선): `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env`. `set -a; . <file>` 로 export 하거나 값을 읽어 치환한다. 템플릿 = `config/join-us.env.example`(`join-us config --init` 로 생성).
+2. **설정이 없으면 사용자에게 1회 질문**해 값을 확보(인터랙션)하고 같은 세션 동안 재사용한다.
+
+치환표: `<OWNER>/<REPO>`→`$JOINUS_REPO` · `<my-gh-login>`→`$JOINUS_GH_LOGIN`(구계정=`$JOINUS_GH_LOGIN_ALT`) · `<git-author-name>`→`$JOINUS_AUTHOR_NAME` · `<project-root>`→`$JOINUS_PROJECT_ROOT` · `<project-domain>`→`$JOINUS_WIKI_DOMAIN` · 팀원 제외 목록→`$JOINUS_TEAM_LOGINS` · `<plaintext-pw>`(알려진 평문 시크릿 스캔 패턴)→`$JOINUS_SECRET_PATTERNS`.
+
+> ⚠️ 실값 설정 파일은 **비공개**(별도 관리) — 절대 커밋/게시하지 않는다. 공개본엔 `*.example`(플레이스홀더)만 포함된다. 본문의 "시크릿 0" 게이트는 그대로 유지한다.
+
 
 ## Purpose
 
@@ -114,7 +126,7 @@ joinus 프로젝트에서 **본인(<my-gh-login> = git author "<git-author-name>
 
 - `wiki_docs/change_log.md`: `작성자 = <my-gh-login>` 행 + `op`(본인 운영조치) 행. → 여기서 PR 번호 수집(`활동 결과물` 링크 소스).
 - `git log --since=<월초> --until=<다음달초> --author='<git-author-name>'` (또는 <my-gh-login>).
-- `~/.claude/skills/`: 그 달 mtime 인 **본인 빌드 스킬**(init-join-us·pr-join-us·review-before-pr-join-us 등). `stat -c '%y' .../SKILL.md` 로 월 확인.
+- 설치된 스킬 디렉터리(예: `~/.claude/skills/` · `~/.codex/skills/join-us-*`): 그 달 mtime 인 **본인 빌드 스킬**(init-join-us·pr-join-us·review-before-pr-join-us 등). `stat -c '%y' .../SKILL.md` 로 월 확인.
 - `SR/reports/`: 운영조치 상세(보고서 본문).
 
 ## Workflow

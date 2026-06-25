@@ -50,6 +50,22 @@ join-us uninstall        # 제거
 - Codex에는 **도구-무관 스킬 6개 전부** 설치됩니다(`codex/manifest.json`). Codex 스킬 → `~/.codex/skills/join-us-<name>/`.
   이 패키지엔 커맨드가 없어 `~/.codex/prompts/` 항목은 0개이며, `~/.codex/AGENTS.md`는 건드리지 않습니다(omx가 재생성하므로).
 
+## ⚙️ 설정 (필수 — 스킬 플레이스홀더 해소)
+
+스킬 본문은 `<OWNER>/<REPO>`·`<my-gh-login>`·`<project-root>` 같은 **플레이스홀더**를 씁니다(특정 저장소·계정에 묶이지 않도록 범용화). 실제로 동작시키려면 본인 값을 **비공개 설정 파일**로 주거나, 스킬이 **물어볼 때 답하면** 됩니다.
+
+```bash
+join-us config --init     # ~/.config/join-us/config.env 를 템플릿에서 생성 (mode 600)
+#  편집해 실제 값 입력: JOINUS_REPO=owner/repo · JOINUS_GH_LOGIN=... · JOINUS_PROJECT_ROOT=... 등
+join-us config            # 현재 설정 경로 + 설정된 키 확인
+join-us doctor            # 설치 + 설정 상태 한눈에
+```
+
+- **해소 순서**(첫 발견 우선): `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env`.
+- 설정 파일이 없으면 스킬이 **1회 질문**해 값을 받아 그 세션 동안 사용합니다(인터랙션 폴백).
+- 키: `JOINUS_REPO`, `JOINUS_GH_LOGIN`(+`_ALT`), `JOINUS_AUTHOR_NAME`, `JOINUS_PROJECT_ROOT`, `JOINUS_WIKI_DOMAIN`, `JOINUS_TEAM_LOGINS`, `JOINUS_SECRET_PATTERNS`. 템플릿 = `config/join-us.env.example`.
+- ⚠️ **실값 설정 파일은 비공개**(별도 관리) — 절대 커밋/게시하지 마세요. 공개본엔 `*.example`(플레이스홀더)만 포함됩니다. 번들 스크립트(`find_missing_prs.py`)는 이 설정을 자동으로 읽고, 미설정 시 안내 후 중단합니다.
+
 ## 업데이트 / 제거
 
 ```bash
