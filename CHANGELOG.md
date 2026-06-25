@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.1] - 2026-06-26
 
 ### Changed — README + license
 - README 외과적 개선: hero(태그라인 + npm·MIT 배지 + 내비) · 빠른 시작(② = `join-us config --init`) · "왜 join-us인가" · 요구사항 섹션 추가. 기존 `## ⚙️ 설정` 블록은 구조 보존.
