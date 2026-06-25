@@ -22,6 +22,7 @@
     "bin",
     "config",
     "!config/join-us.env",
+    "LICENSE",
     "README.md",
     "CHANGELOG.md"
   ],
