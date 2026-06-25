@@ -1,6 +1,6 @@
 {
   "name": "@kaydash9999/join-us-plugins",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "join-us — Claude Code + Codex CLI plugin: joinus-style contribution workflow skills (PR + Copilot review, multi-PR dev merge, per-PR/monthly reports, GitHub Wiki publish, pre-PR code review). Install via Claude Code marketplace, or `npm i -g @kaydash9999/join-us-plugins` then `join-us setup`.",
   "bin": {
     "join-us": "bin/join-us.js"

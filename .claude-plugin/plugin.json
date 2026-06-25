@@ -1,6 +1,6 @@
 {
   "name": "join-us",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Claude Code plugin: joinus-style contribution workflow skills — PR convention + Copilot re-review, multi-PR dev merges, per-PR & monthly reports, GitHub Wiki publishing, and pre-PR code review. Generalized template (placeholders for repo/account/domain).",
   "author": {
     "name": "smallOpenSource",
