@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""make-join-us-pr-report 권위 소스 누락 탐지기 (v1.2).
+"""make-join-us-pr-report 권위 소스 누락 탐지기 (v1.3 — config-driven).
 
-GitHub repo 의 PR 목록(권위 소스)에서 본인(<my-gh-login>*) PR 을 모아
+GitHub repo 의 PR 목록(권위 소스)에서 본인(JOINUS_GH_LOGIN*) PR 을 모아
   [A] SR/reports/ 미작성   [B] change_log.md 누락   [C] change_log엔 있으나 GitHub 매칭 실패
 세 갈래를 대조한다. 리포트 생성 대상([A])을 JSON 으로도 내보낸다.
 
-기본 스코프(2026-06 사용자 확정):
-  - base=dev 로 머지된 PR 만(release/main 승격분은 dev 작업의 중복이라 기본 제외). --base 로 변경.
-  - change_log 미러/기록 메타 PR 은 기본 제외(B안). --include-cl-meta 로 포함.
-  - state=MERGED 만(트라이얼/superseded CLOSED 는 기본 제외). --include-open/--include-closed.
+⚙️ 설정(필수): repo·계정·project-root 는 코드에 박지 않고 설정에서 온다.
+  우선순위  $JOINUS_CONFIG -> ./.join-us.env -> ~/.config/join-us/config.env  (KEY=value)
+  또는 환경변수 직접:  JOINUS_REPO=owner/repo  JOINUS_GH_LOGIN=login  JOINUS_PROJECT_ROOT=/path
+  템플릿:  config/join-us.env.example   (실제 env 변수가 파일 값보다 우선)
+  미설정 시 플레이스홀더(<OWNER>/<REPO> 등)가 남아 친절한 에러로 중단한다.
 
-전제: "내 PR 의 전체 목록은 repo 의 PR 목록에 있다" → change_log 가 아니라 GitHub 이 권위 소스.
-gh CLI 인증 필요. 표준 라이브러리 + gh 만 사용.
+전제: gh CLI 인증 필요. 표준 라이브러리 + gh 만 사용.
 
 사용:
   python3 find_missing_prs.py                          # dev-merged·B안 기본
@@ -26,9 +26,42 @@ import re
 import subprocess
 import sys
 
-DEF_REPO = "<OWNER>/<REPO>"
-DEF_REPORTS = "<project-root>/SR/reports"
-DEF_CHANGELOG = "<project-root>/wiki_docs/change_log.md"
+PLACEHOLDER_RE = re.compile(r"<[A-Za-z0-9_./-]+>")
+
+
+def load_config():
+    """KEY=value 설정 해소(파일 → dict). 실제 env 변수가 파일보다 우선.
+    우선순위: $JOINUS_CONFIG -> ./.join-us.env -> ~/.config/join-us/config.env."""
+    cfg = {}
+    candidates = [
+        os.environ.get("JOINUS_CONFIG"),
+        os.path.join(os.getcwd(), ".join-us.env"),
+        os.path.join(os.path.expanduser("~"), ".config", "join-us", "config.env"),
+    ]
+    for path in candidates:
+        if path and os.path.isfile(path):
+            for line in open(path, encoding="utf-8"):
+                s = line.strip()
+                if not s or s.startswith("#") or "=" not in s:
+                    continue
+                k, v = s.split("=", 1)
+                cfg[k.strip()] = v.strip()
+            break
+    for k in ("JOINUS_REPO", "JOINUS_GH_LOGIN", "JOINUS_GH_LOGIN_ALT", "JOINUS_PROJECT_ROOT"):
+        if os.environ.get(k):
+            cfg[k] = os.environ[k]
+    return cfg
+
+
+CFG = load_config()
+DEF_REPO = CFG.get("JOINUS_REPO", "<OWNER>/<REPO>")
+DEF_ROOT = CFG.get("JOINUS_PROJECT_ROOT", "<project-root>")
+DEF_REPORTS = os.path.join(DEF_ROOT, "SR", "reports")
+DEF_CHANGELOG = os.path.join(DEF_ROOT, "wiki_docs", "change_log.md")
+# author prefix = login(+alt)의 공통 접두어 → 구/신 계정 모두 prefix 매칭.
+_LOGINS = [CFG.get("JOINUS_GH_LOGIN", ""), CFG.get("JOINUS_GH_LOGIN_ALT", "")]
+KNOWN_LOGINS = {x.lower() for x in _LOGINS if x}        # exact author set (precise default)
+DEF_AUTHOR_PREFIX = os.path.commonprefix([x for x in _LOGINS if x]) or "<my-gh-login>"
 
 
 def gh_prs(repo, limit):
@@ -87,8 +120,8 @@ def main():
     ap.add_argument("--repo", default=DEF_REPO)
     ap.add_argument("--reports", default=DEF_REPORTS)
     ap.add_argument("--changelog", default=DEF_CHANGELOG)
-    ap.add_argument("--author-prefix", default="<my-gh-login>",
-                    help="GitHub author login 접두어(본인 GitHub 계정 prefix)")
+    ap.add_argument("--author-prefix", default=DEF_AUTHOR_PREFIX,
+                    help="미지정 시 JOINUS_GH_LOGIN[_ALT] 정확 집합으로 매칭(정밀). 명시하면 그 prefix 로 startswith 매칭")
     ap.add_argument("--base", default="dev",
                     help="머지 대상 브랜치 필터(기본 dev). 'all'=base 무관(release/main 포함)")
     ap.add_argument("--include-cl-meta", action="store_true",
@@ -100,10 +133,34 @@ def main():
     ap.add_argument("--json", dest="json_out", default=None, help="생성대상 목록 JSON 출력 경로")
     args = ap.parse_args()
 
+    # 설정 미해소 가드: 플레이스홀더가 남았으면 친절히 중단(조용히 <OWNER>/<REPO> 로 gh 호출 금지).
+    unresolved = [name for name, val in (("--repo", args.repo),
+                                         ("--author-prefix", args.author_prefix),
+                                         ("--reports", args.reports))
+                  if PLACEHOLDER_RE.search(str(val))]
+    if unresolved:
+        sys.exit(
+            "[find_missing_prs] 설정 미해소: " + ", ".join(unresolved) + "\n"
+            "  repo·계정·project-root 를 설정하세요:\n"
+            "    방법1) join-us config --init  후 ~/.config/join-us/config.env 편집\n"
+            "    방법2) export JOINUS_REPO=owner/repo JOINUS_GH_LOGIN=login JOINUS_PROJECT_ROOT=/path\n"
+            "    템플릿) config/join-us.env.example\n"
+            "  또는 --repo/--author-prefix/--reports 를 직접 넘기세요."
+        )
+
     pre = args.author_prefix.lower()
+    # 기본 = 설정된 정확한 로그인 집합(KNOWN_LOGINS)으로 매칭(정밀, 무관 계정 over-match 방지).
+    # --author-prefix 를 명시하면 그 prefix 로 startswith 매칭(레거시/유연 모드).
+    explicit_prefix = args.author_prefix != DEF_AUTHOR_PREFIX
+
+    def _is_mine(login):
+        login = (login or "").lower()
+        if KNOWN_LOGINS and not explicit_prefix:
+            return login in KNOWN_LOGINS
+        return bool(pre) and login.startswith(pre)
+
     prs = gh_prs(args.repo, args.limit)
-    mine = {p["number"]: p for p in prs
-            if (p.get("author") or {}).get("login", "").lower().startswith(pre)}
+    mine = {p["number"]: p for p in prs if _is_mine((p.get("author") or {}).get("login"))}
     if args.base != "all":
         mine = {n: p for n, p in mine.items() if p.get("baseRefName") == args.base}
     my_nums = set(mine)

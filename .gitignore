@@ -13,6 +13,13 @@ __pycache__/
 #     EC2 instance IDs, internal topology). LOCAL ONLY — never commit/publish. ---
 skills/init-join-us/
 
+# --- join-us PRIVATE config (real values) — never commit/publish.
+#     Only config/join-us.env.example (placeholders) ships. ---
+*.env
+!*.env.example
+.join-us.env
+config/join-us.env
+
 # --- Local git credential store (token-scoped auth option) ---
 .join-us-credentials
 .git-credentials

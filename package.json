@@ -7,15 +7,21 @@
   },
   "scripts": {
     "sync-version": "node scripts/sync-version.js",
+    "clean-pycache": "node scripts/clean-pycache.js",
+    "prepack": "node scripts/clean-pycache.js",
     "prepublishOnly": "node scripts/sync-version.js --check"
   },
   "files": [
     "skills",
     "!skills/init-join-us",
     "!skills/init-join-us/**",
+    "!**/__pycache__",
+    "!**/*.pyc",
     ".claude-plugin",
     "codex",
     "bin",
+    "config",
+    "!config/join-us.env",
     "README.md",
     "CHANGELOG.md"
   ],

@@ -12,6 +12,18 @@ triggers:
 
 # pr-join-us — joinus PR 등록 + Copilot 리뷰 요청
 
+## ⚙️ 설정 (필수 — 플레이스홀더 해소)
+
+이 스킬 본문의 `<OWNER>/<REPO>`·`<my-gh-login>`·`<git-author-name>`·`<project-root>` 등은 **범용화 플레이스홀더**다. 실행 전 반드시 실제 값으로 해소한다:
+
+1. **설정 파일 로드**(KEY=value, 첫 발견 우선): `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env`. `set -a; . <file>` 로 export 하거나 값을 읽어 치환한다. 템플릿 = `config/join-us.env.example`(`join-us config --init` 로 생성).
+2. **설정이 없으면 사용자에게 1회 질문**해 값을 확보(인터랙션)하고 같은 세션 동안 재사용한다.
+
+치환표: `<OWNER>/<REPO>`→`$JOINUS_REPO` · `<my-gh-login>`→`$JOINUS_GH_LOGIN`(구계정=`$JOINUS_GH_LOGIN_ALT`) · `<git-author-name>`→`$JOINUS_AUTHOR_NAME` · `<project-root>`→`$JOINUS_PROJECT_ROOT` · `<project-domain>`→`$JOINUS_WIKI_DOMAIN` · 팀원 제외 목록→`$JOINUS_TEAM_LOGINS` · `<plaintext-pw>`(알려진 평문 시크릿 스캔 패턴)→`$JOINUS_SECRET_PATTERNS`.
+
+> ⚠️ 실값 설정 파일은 **비공개**(별도 관리) — 절대 커밋/게시하지 않는다. 공개본엔 `*.example`(플레이스홀더)만 포함된다. 본문의 "시크릿 0" 게이트는 그대로 유지한다.
+
+
 ## Purpose
 
 joinus 저장소(`<OWNER>/<REPO>`)에서 변경분을 **팀 PR 컨벤션대로** 커밋·푸시하고, PR 을 생성(또는 기존 PR 갱신)한 뒤 **Copilot 자동 리뷰를 (재)요청**한다. 신규 커밋은 Copilot 자동 재리뷰가 보장되지 않으므로 명시 재요청이 핵심.

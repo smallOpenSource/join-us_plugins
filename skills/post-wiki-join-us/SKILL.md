@@ -14,6 +14,18 @@ description: >-
 
 # post-wiki-join-us — joinus GitHub Wiki 게시/갱신
 
+## ⚙️ 설정 (필수 — 플레이스홀더 해소)
+
+이 스킬 본문의 `<OWNER>/<REPO>`·`<my-gh-login>`·`<git-author-name>`·`<project-root>` 등은 **범용화 플레이스홀더**다. 실행 전 반드시 실제 값으로 해소한다:
+
+1. **설정 파일 로드**(KEY=value, 첫 발견 우선): `$JOINUS_CONFIG` → `./.join-us.env` → `~/.config/join-us/config.env`. `set -a; . <file>` 로 export 하거나 값을 읽어 치환한다. 템플릿 = `config/join-us.env.example`(`join-us config --init` 로 생성).
+2. **설정이 없으면 사용자에게 1회 질문**해 값을 확보(인터랙션)하고 같은 세션 동안 재사용한다.
+
+치환표: `<OWNER>/<REPO>`→`$JOINUS_REPO` · `<my-gh-login>`→`$JOINUS_GH_LOGIN`(구계정=`$JOINUS_GH_LOGIN_ALT`) · `<git-author-name>`→`$JOINUS_AUTHOR_NAME` · `<project-root>`→`$JOINUS_PROJECT_ROOT` · `<project-domain>`→`$JOINUS_WIKI_DOMAIN` · 팀원 제외 목록→`$JOINUS_TEAM_LOGINS` · `<plaintext-pw>`(알려진 평문 시크릿 스캔 패턴)→`$JOINUS_SECRET_PATTERNS`.
+
+> ⚠️ 실값 설정 파일은 **비공개**(별도 관리) — 절대 커밋/게시하지 않는다. 공개본엔 `*.example`(플레이스홀더)만 포함된다. 본문의 "시크릿 0" 게이트는 그대로 유지한다.
+
+
 ## 무엇을 하나
 repo 의 정본 `wiki_docs/` 문서를 **라이브 GitHub Wiki**(`.wiki.git` 미러)에 반영한다. 신규 위키 페이지를 만들거나 기존 페이지를 갱신하고, `Home` 네비게이션을 정리하며, `Change-Log` 를 동기화한다. 핵심 파이프라인(clone→변환→시크릿스캔→commit→push→검증)은 `scripts/post_wiki.sh` 가 처리하고, 이 문서는 **무엇을 어떤 슬러그로 올릴지·Home 을 어떻게 정리할지** 같은 판단을 안내한다.
 

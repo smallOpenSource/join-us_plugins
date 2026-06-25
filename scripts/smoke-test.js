@@ -31,7 +31,14 @@ try {
 
   // init-join-us must NOT be in the tarball (local-only: secrets/PII/infra)
   const tarList = run('tar', ['-tzf', tarPath]);
+  const tarLines = tarList.split('\n').map((s) => s.trim());
   ok(!/skills\/init-join-us\//.test(tarList), 'tarball excludes skills/init-join-us (local-only)');
+  // config: template ships, real private config never does
+  ok(tarLines.some((l) => l.endsWith('config/join-us.env.example')), 'tarball includes config/join-us.env.example (template)');
+  ok(!tarLines.some((l) => l.endsWith('config/join-us.env')), 'tarball excludes real config/join-us.env (private)');
+  // build artifacts must never ship (a stray .pyc embeds an absolute path + bypasses name-only scans)
+  ok(!tarLines.some((l) => l.endsWith('.pyc')), 'tarball excludes compiled *.pyc');
+  ok(!/__pycache__/.test(tarList), 'tarball excludes __pycache__');
 
   // 2) global install into temp prefix (offline; no deps)
   run('npm', ['i', '-g', '--prefix', prefix, tarPath], { stdio: 'pipe' });
@@ -51,6 +58,17 @@ try {
   const claudeOut = run(binPath, ['setup', '--claude', '--dry-run'], { cwd: home, env });
   ok(/marketplace add/.test(claudeOut) && /plugin install join-us@join-us-plugins/.test(claudeOut) || /claude CLI not found/.test(claudeOut),
      'claude dry-run prints register commands (or notes missing claude)');
+
+  // 4b) byte-level secret scan of the ACTUAL packed contents (not just filenames) —
+  //     catches blind spots like a .pyc compiled from a non-generalized source.
+  const extract = path.join(tmp, 'extract');
+  fs.mkdirSync(extract, { recursive: true });
+  run('tar', ['-xzf', tarPath, '-C', extract]);
+  let leak = '';
+  try {
+    leak = run('grep', ['-rIlE', 'joko3699|JOINUS-WORLD|joinus-deploy-new|AKIA[0-9A-Z]{16}|AvWC9rNqOF|i-0[0-9a-f]{10,}', extract], { stdio: 'pipe' }).trim();
+  } catch (e) { leak = ''; } // grep exits 1 when there are no matches
+  ok(leak === '', `packed contents carry no real secrets/identifiers${leak ? ' — LEAK in: ' + leak.replace(/\n/g, ', ') : ''}`);
 
   // 5) no writes outside temp
   ok(!fs.existsSync(path.join(home, '.codex')), 'dry-run wrote nothing (no HOME/.codex)');
