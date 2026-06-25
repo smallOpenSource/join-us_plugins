@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "note": "Per-surface target manifest for join-us multi-tool distribution. Enumerate skills by SKILL.md presence. EXCLUDES init-join-us (internal infra reproduction runbook containing a live SES credential + EC2 instance IDs + internal topology — kept local via .gitignore/.npmignore + package.json files negation, never published). target=both -> install to Claude Code AND Codex; claude-only -> Claude Code only. The Codex generator (join-us setup --codex) reads this.",
+  "surfaces": [
+    { "name": "pr-join-us",               "type": "skill", "target": "both", "reason": "git/gh PR convention + Copilot re-review request; tool-agnostic", "supportingFiles": [] },
+    { "name": "merge_to_dev-join-us",      "type": "skill", "target": "both", "reason": "multi-PR sequential dev merge via gh (required-CI/stacked PR aware); tool-agnostic", "supportingFiles": [] },
+    { "name": "make-join-us-pr-report",    "type": "skill", "target": "both", "reason": "per-PR operator report from the gh PR list (authoritative source); tool-agnostic", "supportingFiles": ["scripts/find_missing_prs.py"], "caveat": "optional humanize step references a humanize-korean skill" },
+    { "name": "monthly-report",            "type": "skill", "target": "both", "reason": "monthly volunteer-work report from git/gh history; tool-agnostic", "supportingFiles": [] },
+    { "name": "post-wiki-join-us",         "type": "skill", "target": "both", "reason": "publish wiki_docs/ pages to a live GitHub Wiki via the .wiki.git mirror; tool-agnostic", "supportingFiles": ["scripts/post_wiki.sh", "evals/evals.json"] },
+    { "name": "review-before-pr-join-us",  "type": "skill", "target": "both", "reason": "pre-PR multi-language code-review methodology; tool-agnostic", "supportingFiles": ["NOTICE", "prompts/task_template.json", "rules/system_rules.json", "rules/rule_docs/"], "caveat": "based on alibaba/open-code-review (Apache-2.0) — see skills/review-before-pr-join-us/NOTICE" }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "name": "join-us-plugins",
+  "owner": {
+    "name": "smallOpenSource",
+    "url": "https://github.com/smallOpenSource"
+  },
+  "metadata": {
+    "description": "Claude Code skills — joinus-style contribution workflow: PR/merge/report/wiki/review. The join-us plugin marketplace.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "join-us",
+      "source": ".",
+      "description": "PR convention + Copilot re-review, multi-PR dev merge, per-PR/monthly reports, GitHub Wiki publish, pre-PR code review; installs as /join-us:* ."
+    }
+  ]
+}

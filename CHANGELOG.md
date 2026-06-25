@@ -1,0 +1,23 @@
+# Changelog
+
+## [0.1.0] - 2026-06-25
+
+### Added — Claude Code marketplace + npm distribution + Codex CLI support
+- Initial packaging of the joinus-style contribution workflow skills as a Claude Code plugin + marketplace (installs as `/join-us:*`).
+- npm global install: `npm i -g @kaydash9999/join-us-plugins` ships a `join-us` CLI (`bin/join-us.js`, no runtime deps).
+- `join-us setup [--claude] [--codex] [--scope user|project] [--dry-run]`, `join-us doctor`, `join-us uninstall`.
+- **Codex CLI support**: `join-us setup --codex` installs the 6 tool-agnostic skills into `~/.codex/skills/join-us-<name>/` (subtree copy), per `codex/manifest.json`. It never writes the omx-generated `~/.codex/AGENTS.md` (relies on `~/.codex/skills/` auto-discovery).
+- `codex/manifest.json` (per-surface `claude-only | both` target) and `codex/transform-matrix.md`.
+- Version-sync guard: `.claude-plugin/plugin.json` is the single source of truth; `npm run sync-version` syncs `package.json`, and `prepublishOnly` fails publish on mismatch.
+
+### Security / generalization (publish hygiene)
+- Project identifiers generalized to placeholders (`<OWNER>/<REPO>`, `<my-gh-login>`, `<project-domain>`).
+- Removed: dev DB password fragments, EC2 instance IDs, AWS account-id hints, and team members' GitHub handles (third-party PII).
+- **`init-join-us` excluded from the published package** — the internal infra reproduction runbook contains a live SES credential, EC2 instance IDs, and internal topology. Kept local only via `.gitignore` + `.npmignore` + `package.json` `files` negation; not listed in `codex/manifest.json`.
+
+### Skills (6)
+- `pr-join-us`, `merge_to_dev-join-us`, `make-join-us-pr-report`, `monthly-report`, `post-wiki-join-us`, `review-before-pr-join-us`.
+
+### Notes
+- No `postinstall`; `join-us setup` is explicit and refuses to run as root (avoids root-owned files in user homes).
+- The skills are generalized templates — fill in your own `<OWNER>/<REPO>`, `<my-gh-login>`, `<project-domain>`.

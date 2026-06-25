@@ -1,0 +1,8 @@
+이 스킬의 rules/ 와 prompts/ 자산은 alibaba/open-code-review 에서 **그대로(verbatim) 복사**한 것입니다.
+- 출처: https://github.com/alibaba/open-code-review  (commit: marketplace clone 2026-06-21)
+- 라이선스: Apache-2.0, Copyright 2026 Alibaba
+- 원본 경로:
+  - rules/system_rules.json      ← internal/config/rules/system_rules.json
+  - rules/rule_docs/*.md         ← internal/config/rules/rule_docs/*.md
+  - prompts/task_template.json   ← internal/config/template/task_template.json
+SKILL.md(파이프라인 절차)는 Go 바이너리의 동작을 Claude-native 로 옮긴 포팅이며, 동시성/positioning 등 일부는 근사입니다(SKILL.md '충실도' 절 참조).

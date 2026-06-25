@@ -1,0 +1,25 @@
+# --- OMC / session runtime state (machine-specific, do not publish) ---
+.omc/
+.remember/
+
+# --- Python caches ---
+__pycache__/
+*.py[cod]
+
+# --- Logs & runtime artifacts ---
+*.log
+
+# --- init-join-us: internal infra reproduction runbook (live SES credential,
+#     EC2 instance IDs, internal topology). LOCAL ONLY — never commit/publish. ---
+skills/init-join-us/
+
+# --- Local git credential store (token-scoped auth option) ---
+.join-us-credentials
+.git-credentials
+
+# --- OS cruft ---
+.DS_Store
+Thumbs.db
+
+# Codex project-scope install (join-us setup --codex --scope project)
+.codex/

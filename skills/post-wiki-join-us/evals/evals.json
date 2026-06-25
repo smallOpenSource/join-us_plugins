@@ -1,0 +1,30 @@
+{
+  "skill_name": "post-wiki-join-us",
+  "note": "이 스킬은 라이브 GitHub Wiki 로 push 하는 outward-facing 동작이라, 자동 eval 을 실제 push 로 돌리면 위키를 오염시킨다. 검증은 `post_wiki.sh --dry-run`(clone+변환+스캔+diff, push 없음)으로 한다. 아래 프롬프트는 트리거/동작 확인용 참고.",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "방금 wiki_docs/backup_restore_runbook.md 를 고쳤어. <OWNER>/<REPO> 의 GitHub Wiki 에도 반영해줘.",
+      "expected_output": "post-wiki-join-us 발동 → .wiki.git clone, backup_restore_runbook.md:Backup-Restore-Runbook(H1 보존) 매핑으로 dry-run 미리보기 후 시크릿 0 확인하고 게시, 게시 후 재클론 검증 + 페이지 URL 보고. AI 트레일러 없는 conventional 커밋.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "change_log 업데이트한 거 위키 Change-Log 페이지에 동기화해줘",
+      "expected_output": "post-wiki-join-us 발동 → change_log.md:Change-Log:strip-h1 매핑(선두 H1 제거)으로 게시. 변경 없으면 '이미 최신' 으로 멱등 처리.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "백업 설계문서랑 런북 두 개를 위키에 새 페이지로 올리고 Home 에서 찾을 수 있게 링크도 걸어줘",
+      "expected_output": "post-wiki-join-us 발동 → 두 페이지 매핑(H1 보존)으로 --dry-run --keep, 남긴 clone 의 Home.md 에 [[제목|슬러그]] 링크 추가 후 --from-clone 으로 게시. 시크릿 0, 검증.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "wiki_docs 의 ARCHITECTURE.md 내용을 좀 더 자세히 써줘",
+      "expected_output": "트리거 안 됨(should NOT). 이건 정본 wiki_docs/ 문서 '작성/편집' 요청이라 append-wiki 영역. 게시(push)가 아니므로 post-wiki-join-us 아님.",
+      "files": []
+    }
+  ]
+}

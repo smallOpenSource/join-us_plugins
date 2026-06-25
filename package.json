@@ -1,0 +1,47 @@
+{
+  "name": "@kaydash9999/join-us-plugins",
+  "version": "0.1.0",
+  "description": "join-us — Claude Code + Codex CLI plugin: joinus-style contribution workflow skills (PR + Copilot review, multi-PR dev merge, per-PR/monthly reports, GitHub Wiki publish, pre-PR code review). Install via Claude Code marketplace, or `npm i -g @kaydash9999/join-us-plugins` then `join-us setup`.",
+  "bin": {
+    "join-us": "bin/join-us.js"
+  },
+  "scripts": {
+    "sync-version": "node scripts/sync-version.js",
+    "prepublishOnly": "node scripts/sync-version.js --check"
+  },
+  "files": [
+    "skills",
+    "!skills/init-join-us",
+    "!skills/init-join-us/**",
+    ".claude-plugin",
+    "codex",
+    "bin",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=16.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "claude-code",
+    "claude",
+    "codex",
+    "codex-cli",
+    "plugin",
+    "skills",
+    "marketplace",
+    "joinus",
+    "pull-request",
+    "code-review"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/smallOpenSource/join-us_plugins.git"
+  },
+  "homepage": "https://github.com/smallOpenSource/join-us_plugins#readme",
+  "license": "MIT",
+  "author": "smallOpenSource"
+}

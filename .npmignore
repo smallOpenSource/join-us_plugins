@@ -1,0 +1,15 @@
+# belt-and-suspenders (package.json `files` is the allowlist)
+.omc/
+.remember/
+.git/
+node_modules/
+*.log
+**/__pycache__/
+*.pyc
+# init-join-us = internal infra runbook (live SES credential / instance IDs / topology)
+# keep out of the npm tarball too
+skills/init-join-us/
+.gitignore
+.npmignore
+.join-us-credentials
+.git-credentials
