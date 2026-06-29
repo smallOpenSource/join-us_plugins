@@ -66,7 +66,13 @@ try {
   run('tar', ['-xzf', tarPath, '-C', extract]);
   let leak = '';
   try {
-    leak = run('grep', ['-rIlE', 'acme-corp|ACME-ORG|acme-repo|AKIA[0-9A-Z]{16}|REDACTED-SECRET|i-0[0-9a-f]{10,}', extract], { stdio: 'pipe' }).trim();
+    // Generic secret FORMATS are safe to hardcode; project-specific identifiers/
+    // secrets come from a PRIVATE env var (JOINUS_LEAK_NEEDLES, regex-alternated)
+    // so real values never live in this tracked file. Unset -> generic scan only.
+    const genericNeedles = 'AKIA[0-9A-Z]{16}|ASIA[0-9A-Z]{16}|gh[posru]_[A-Za-z0-9]{36}|xox[bpars]-[A-Za-z0-9-]{10,}|i-0[0-9a-f]{10,}';
+    const extraNeedles = (process.env.JOINUS_LEAK_NEEDLES || '').trim();
+    const needles = extraNeedles ? genericNeedles + '|' + extraNeedles : genericNeedles;
+    leak = run('grep', ['-rIlE', needles, extract], { stdio: 'pipe' }).trim();
   } catch (e) { leak = ''; } // grep exits 1 when there are no matches
   ok(leak === '', `packed contents carry no real secrets/identifiers${leak ? ' — LEAK in: ' + leak.replace(/\n/g, ', ') : ''}`);
 
