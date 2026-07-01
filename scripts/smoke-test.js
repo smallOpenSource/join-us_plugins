@@ -79,6 +79,37 @@ try {
   // 5) no writes outside temp
   ok(!fs.existsSync(path.join(home, '.codex')), 'dry-run wrote nothing (no HOME/.codex)');
   ok(!fs.existsSync(path.join(process.cwd(), '.codex')) || process.cwd() === home, 'dry-run created no .codex in repo cwd');
+
+  // 6) co-install safety: join-us shares ~/.codex/skills with other plugins (e.g. banker) + omx skills.
+  //    join-us's own setup/uninstall must touch ONLY join-us-* and never a foreign plugin's skills.
+  //    Foreign skills are simulated (no dependency on the banker package) so this stays self-contained.
+  const home2 = path.join(tmp, 'home2');
+  const foreign = { banker: path.join(home2, '.codex', 'skills', 'banker-coexist-probe'), omx: path.join(home2, '.codex', 'skills', 'ralph') };
+  for (const p of Object.values(foreign)) { fs.mkdirSync(p, { recursive: true }); fs.writeFileSync(path.join(p, 'SKILL.md'), `---\nname: ${path.basename(p)}\n---\n`); }
+  const env2 = { ...process.env, HOME: home2, USERPROFILE: home2 };
+  const cs2 = path.join(home2, '.codex', 'skills');
+  const foreignIntact = () => fs.existsSync(path.join(foreign.banker, 'SKILL.md')) && fs.existsSync(path.join(foreign.omx, 'SKILL.md'));
+
+  run(binPath, ['setup', '--codex', '--scope', 'user'], { cwd: home2, env: env2 });
+  const afterSetup = fs.readdirSync(cs2).filter((d) => d.startsWith('join-us-'));
+  ok(afterSetup.length === 6, `co-install: join-us setup installs its 6 skills alongside foreign skills (got ${afterSetup.length})`);
+  ok(foreignIntact(), 'co-install: join-us setup preserves foreign banker-*/omx skills (no cross-prefix clobber)');
+
+  // dir==name (Codex discovery) + init-join-us must never reach codex + stale sweep on reinstall
+  const readName = (md) => { const m = fs.readFileSync(md, 'utf8').match(/^---\r?\n([\s\S]*?)\r?\n---/); const n = m && m[1].match(/^name:\s*["']?([^"'\n]+?)["']?\s*$/m); return n ? n[1] : null; };
+  const mismatched = afterSetup.filter((d) => readName(path.join(cs2, d, 'SKILL.md')) !== d);
+  ok(mismatched.length === 0, `every installed join-us skill has dir==frontmatter name (mismatched: ${mismatched.join(', ') || 'none'})`);
+  ok(!fs.existsSync(path.join(cs2, 'join-us-init-join-us')), 'init-join-us is never installed to codex (local-only, manifest-excluded)');
+  fs.mkdirSync(path.join(cs2, 'join-us-OBSOLETE'), { recursive: true });
+  fs.writeFileSync(path.join(cs2, 'join-us-OBSOLETE', 'SKILL.md'), '---\nname: join-us-OBSOLETE\n---\n');
+  run(binPath, ['setup', '--codex', '--scope', 'user'], { cwd: home2, env: env2 });
+  ok(!fs.existsSync(path.join(cs2, 'join-us-OBSOLETE')), 'stale join-us-* swept on reinstall (no leftover duplicate)');
+  ok(foreignIntact(), 'sweep preserves foreign banker-*/omx skills');
+
+  run(binPath, ['uninstall', '--codex', '--scope', 'user'], { cwd: home2, env: env2 });
+  const afterUninstall = fs.readdirSync(cs2).filter((d) => d.startsWith('join-us-'));
+  ok(afterUninstall.length === 0, 'co-install: join-us uninstall removes only its own join-us-* skills');
+  ok(foreignIntact(), 'co-install: join-us uninstall preserves foreign banker-*/omx skills');
 } catch (e) {
   console.error('HARNESS ERROR:', e.message);
   failures++;

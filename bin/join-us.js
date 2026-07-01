@@ -146,6 +146,48 @@ function copyFile(src, dest, dryRun) {
   fs.copyFileSync(src, dest);
 }
 
+// CO-INSTALL INVARIANT: join-us shares ~/.codex/skills with other plugins (e.g. banker) and omx.
+// Every Codex operation here is scoped to the `join-us-` prefix ONLY, so it never sweeps, rewrites,
+// or removes a foreign plugin's skills. Keep any new codex op prefix-scoped (scripts/smoke-test.js guards this).
+function sweepCodexArtifacts(base, dryRun) {
+  let removed = 0;
+  for (const sub of ['skills', 'prompts']) {
+    const dir = path.join(base, sub);
+    let entries = [];
+    try { entries = fs.readdirSync(dir).filter(d => d.startsWith('join-us-')); } catch { /* dir absent */ }
+    for (const e of entries) {
+      const p = path.join(dir, e);
+      if (dryRun) { log(`  [dry-run] sweep ${p}`); continue; }
+      fs.rmSync(p, { recursive: true, force: true });
+      removed++;
+    }
+  }
+  return removed;
+}
+
+// Read a SKILL.md frontmatter `name:` (used by doctor to verify the Codex dir==name rule).
+function readSkillName(skillMd) {
+  let src;
+  try { src = fs.readFileSync(skillMd, 'utf8'); } catch { return null; }
+  const fm = src.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) return null;
+  const m = fm[1].match(/^name:\s*["']?([^"'\n]+?)["']?\s*$/m);
+  return m ? m[1] : null;
+}
+
+// Codex discovers skills by directory and expects the SKILL.md frontmatter `name:` to equal the
+// directory name. Our Codex dir is `join-us-<name>`, so rewrite ONLY the first `name:` line to match.
+function setCodexSkillName(skillMd, newName, dryRun) {
+  if (dryRun) { log(`  [dry-run] set frontmatter name: ${newName}`); return; }
+  let src;
+  try { src = fs.readFileSync(skillMd, 'utf8'); } catch { return; }
+  const fm = src.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!fm) return;
+  let block = fm[1];
+  block = /^name:.*$/m.test(block) ? block.replace(/^name:.*$/m, `name: ${newName}`) : `name: ${newName}\n${block}`;
+  fs.writeFileSync(skillMd, src.slice(0, fm.index) + `---\n${block}\n---` + src.slice(fm.index + fm[0].length));
+}
+
 /* ---------- Claude Code target ---------- */
 function setupClaude(dryRun) {
   log('• Claude Code:');
@@ -182,10 +224,16 @@ function setupCodex(dryRun, scope) {
   const base = codexBase(scope);
   const skillsDir = path.join(base, 'skills');
   const promptsDir = path.join(base, 'prompts');
+  // Clean reinstall: remove any prior join-us-* first so an update never leaves a stale duplicate
+  // (prefix-scoped: only join-us-*, never a co-installed plugin's skills).
+  const swept = sweepCodexArtifacts(base, dryRun);
+  if (swept) log(`  swept ${swept} prior join-us-* artifact(s) before reinstall.`);
   let nSkill = 0, nCmd = 0;
   for (const s of eligible(m)) {
     if (s.type === 'skill') {
-      copyDir(path.join(PKG_ROOT, 'skills', s.name), path.join(skillsDir, `join-us-${s.name}`), dryRun);
+      const dest = path.join(skillsDir, `join-us-${s.name}`);
+      copyDir(path.join(PKG_ROOT, 'skills', s.name), dest, dryRun);
+      setCodexSkillName(path.join(dest, 'SKILL.md'), `join-us-${s.name}`, dryRun); // dir==name (Codex discovery)
       nSkill++;
     } else if (s.type === 'command') {
       copyFile(path.join(PKG_ROOT, 'commands', `${s.name}.md`), path.join(promptsDir, `join-us-${s.name}.md`), dryRun);
@@ -193,6 +241,7 @@ function setupCodex(dryRun, scope) {
     }
   }
   log(`  → ${nSkill} skills -> ${path.join(base, 'skills', 'join-us-*')}, ${nCmd} prompts -> ${path.join(base, 'prompts', 'join-us-*.md')}`);
+  log('  → skills are invoked as `join-us-<name>` (frontmatter name rewritten to match the dir).');
   log('  → ~/.codex/AGENTS.md is NOT modified (omx regenerates it); skills auto-discovered from ~/.codex/skills/.');
   log('  → reminder: set your private config (`join-us config --init`) so skill placeholders resolve.');
   return true;
@@ -211,6 +260,15 @@ function doctor() {
   try { installed = fs.readdirSync(sdir).filter(d => d.startsWith('join-us-')); } catch { /* none */ }
   log(`  codex CLI: ${have('codex') ? 'found' : 'NOT found'}`);
   log(`  installed join-us skills in ~/.codex/skills: ${installed.length}`);
+  // Codex only discovers a skill when its dir name equals the SKILL.md `name:` — flag any mismatch.
+  const mismatched = installed
+    .map(d => ({ d, name: readSkillName(path.join(sdir, d, 'SKILL.md')) }))
+    .filter(x => x.name && x.name !== x.d);
+  if (mismatched.length) {
+    log('  ⚠ dir/name mismatch (Codex will NOT list these) — reinstall with this version:');
+    for (const x of mismatched) log(`      ${x.d}/  has  name: ${x.name}`);
+  }
+  if (have('codex') && installed.length === 0) log('  ⚠ codex found but 0 join-us skills installed — run: join-us setup --codex');
   const m = readManifest();
   log(`  manifest: ${eligible(m).length} codex-eligible surfaces (of ${m.surfaces.length}).`);
   log('Config (placeholder resolution):');

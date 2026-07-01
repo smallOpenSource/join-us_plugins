@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0] - 2026-07-02
+
+### Fixed
+- **Codex 스킬 미표시**: `join-us setup --codex` 가 스킬을 `~/.codex/skills/join-us-<name>/` 로 복사할 때 SKILL.md 프론트매터 `name:` 을 `join-us-<name>` 로 재작성한다. Codex는 스킬 디렉터리명과 `name:` 일치를 요구하는데, 기존에는 `name: <name>` 그대로라 Codex가 스킬을 인식하지 못했다. `doctor` 에 dir==name 검증·경고와 "codex 있는데 join-us 스킬 0개" 경고 추가.
+
+### Changed
+- **업데이트 시 중복 제거**: `join-us setup --codex` 가 설치 전 기존 `join-us-*` 를 먼저 정리(sweep)한 뒤 클린 재설치한다. 매니페스트에서 제거·개명된 스킬의 옛 버전이 잔존하지 않는다.
+- **동시 설치 안전(co-install)**: 모든 Codex 작업을 `join-us-` 접두로만 한정해, banker 등 다른 플러그인이나 omx 스킬과 `~/.codex/skills` 를 공유해도 서로 건드리지 않는다. `bin/join-us.js` 에 불변 주석, `scripts/smoke-test.js` 에 회귀 가드를 추가했다.
+- **README 재작성**: 과장·AI 흔적 표현을 덜어내고(이탤릭 태그라인·불필요한 em dash 정리, "왜 join-us인가" 섹션 정리) 빠른 시작에 Claude Code·Codex 양쪽 경로를 명시했다. 범용화·설정·`init-join-us` 제외 안내는 보존.
+- `sync-version` 이 `.claude-plugin/marketplace.json` 의 `metadata.version` 까지 동기화한다(기존 0.1.0 드리프트 교정).
+
+### Added
+- `scripts/smoke-test.js` 에 실제 설치 기반 회귀 단언: `join-us-*` dir==frontmatter `name`, stale sweep, `init-join-us` 는 codex에 설치되지 않음, co-install 시 foreign `banker-*`/omx 스킬 보존.
+
 ## [0.1.1] - 2026-06-26
 
 ### Changed — README + license
