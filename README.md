@@ -97,10 +97,13 @@ join-us doctor            # 설치 + 설정 상태 한눈에
 ## 요구사항
 
 - **Claude Code** (마켓플레이스 설치 경로) 또는 **Node.js ≥ 16.7** (npm 전역 설치 경로. `join-us` CLI 제공).
-- **`git`·`gh`(GitHub CLI, 인증 필요)·`python3`**. 스킬이 런타임에 사용합니다.
+- **`git`·`gh`(GitHub CLI, 인증 필요)·`python3`·`jq`**. 스킬이 런타임에 사용합니다.
 - 본인 프로젝트 설정(위 **⚙️ 설정**).
+- (선택) `make-join-us-pr-report` 의 윤문 단계는 humanize-korean 스킬을 사용합니다(없으면 건너뜀).
 
 ## 업데이트 / 제거
+
+**Claude Code:**
 
 ```bash
 claude plugin update join-us                        # 플러그인 최신화 (재시작 후 적용)
@@ -108,9 +111,27 @@ claude plugin marketplace update join-us-plugins    # 마켓플레이스 메타 
 claude plugin uninstall join-us                     # 제거
 ```
 
-npm 경로에서는 패키지를 갱신한 뒤 `join-us setup` 을 다시 실행합니다.
+**npm · Codex:**
+
+```bash
+npm i -g @kaydash9999/join-us-plugins   # 최신 버전 설치
+join-us setup                            # 재설치 (기존 join-us-* 정리 후 클린 설치)
+join-us uninstall                        # 제거
+```
+
+Codex는 재설치할 때마다 기존 `join-us-*` 를 먼저 정리하므로 옛 버전이 중복으로 남지 않습니다.
 
 ## 라이선스 / 서드파티
 
-- **MIT** ([LICENSE](LICENSE)). Owner: [smallOpenSource](https://github.com/smallOpenSource).
-- `skills/review-before-pr-join-us` 는 [alibaba/open-code-review](https://github.com/alibaba/open-code-review) 방법론 기반입니다. 원본 라이선스·고지는 `skills/review-before-pr-join-us/NOTICE` 를 참조하세요.
+join-us 자체는 **MIT** ([LICENSE](LICENSE)). Owner: [smallOpenSource](https://github.com/smallOpenSource).
+
+**번들된 코드 (이 패키지가 재배포)**
+- `skills/review-before-pr-join-us` 의 `rules/`·`prompts/` 자산은 [alibaba/open-code-review](https://github.com/alibaba/open-code-review)에서 **verbatim 복사**한 것으로 **Apache-2.0**(© 2026 Alibaba)입니다. 원본 고지는 `skills/review-before-pr-join-us/NOTICE` 에 포함. SKILL.md 파이프라인은 원본 동작을 옮긴 Claude-native 포팅입니다.
+
+아래는 스킬이 **런타임에 의존하거나 연동**하는 외부 요소로, join-us 가 재배포하지 않으며 각 라이선스·상표는 소유자에게 있습니다.
+
+**의존 도구 (사용 시 별도 설치, 라이선스는 각 프로젝트 소유)**
+- git(GPL-2.0), GitHub CLI `gh`(MIT), python3(PSF), jq(MIT), bash. 번들 스크립트 `find_missing_prs.py`(표준 라이브러리만)·`post_wiki.sh`(bash)는 서드파티 라이브러리를 쓰지 않습니다.
+
+**연동·참조**
+- humanize-korean 스킬: `make-join-us-pr-report` 의 선택적 윤문 단계에서 사용(없으면 건너뜀).

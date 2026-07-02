@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.1] - 2026-07-02
+
+### Docs
+- README 라이선스/서드파티 정확화: `review-before-pr-join-us` 의 `rules/`·`prompts/` 가 alibaba/open-code-review에서 **verbatim 복사(Apache-2.0, © Alibaba)** 임을 명시(기존 "방법론 기반" 축소 표현 교정). 의존 도구(git·gh·python3·jq·bash)와 humanize-korean 선택 의존을 3범주(번들/의존/연동)로 정리.
+- README 업데이트/제거 섹션을 Claude Code + npm·Codex 대칭으로 보강하고, 재설치 시 기존 `join-us-*` 정리(중복 방지) 노트 추가. 요구사항에 `jq`·humanize-korean(선택) 명시.
+
 ## [0.2.0] - 2026-07-02
 
 ### Fixed
